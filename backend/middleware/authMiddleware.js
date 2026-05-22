@@ -32,7 +32,7 @@ const protect = async (req, res, next) => {
 };
 
 const admin = (req, res, next) => {
-    if (req.user && req.user.role === 'admin') {
+    if (req.user && (req.user.role === 'admin' || req.user.role === 'superadmin')) {
         next();
     } else {
         res.status(401);
@@ -40,8 +40,17 @@ const admin = (req, res, next) => {
     }
 };
 
+const superadmin = (req, res, next) => {
+    if (req.user && req.user.role === 'superadmin') {
+        next();
+    } else {
+        res.status(401);
+        throw new Error('Not authorized as a superadmin');
+    }
+};
+
 const hr = (req, res, next) => {
-    if (req.user && req.user.role === 'hr') {
+    if (req.user && (req.user.role === 'hr' || req.user.role === 'superadmin')) {
         next();
     } else {
         res.status(401);
@@ -50,7 +59,7 @@ const hr = (req, res, next) => {
 };
 
 const adminOrHr = (req, res, next) => {
-    if (req.user && (req.user.role === 'admin' || req.user.role === 'hr')) {
+    if (req.user && (req.user.role === 'admin' || req.user.role === 'hr' || req.user.role === 'superadmin')) {
         next();
     } else {
         res.status(401);
@@ -58,4 +67,4 @@ const adminOrHr = (req, res, next) => {
     }
 };
 
-module.exports = { protect, admin, hr, adminOrHr };
+module.exports = { protect, admin, superadmin, hr, adminOrHr };

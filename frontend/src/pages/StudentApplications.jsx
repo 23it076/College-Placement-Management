@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Card from '../components/Card';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { Clock, CheckCircle, XCircle, Building2, MapPin, ChevronRight, Loader2, Briefcase } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Building2, MapPin, ChevronRight, Briefcase } from 'lucide-react';
+import LoadingSpinner from '../components/LoadingSpinner';
 import Navbar from '../components/Navbar';
 import Button from '../components/Button';
 import { Link } from 'react-router-dom';
@@ -29,6 +30,7 @@ const StudentApplications = () => {
 
     const getStatusIcon = (status) => {
         switch (status.toLowerCase()) {
+            case 'selected':
             case 'hired':
             case 'approved': return <CheckCircle size={18} className="text-emerald-400" />;
             case 'rejected': return <XCircle size={18} className="text-rose-400" />;
@@ -40,7 +42,7 @@ const StudentApplications = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-slate-950">
-                <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+                <LoadingSpinner size="lg" />
             </div>
         );
     }

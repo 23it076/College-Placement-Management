@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import { Building2, Plus, Search, MapPin, Briefcase, Trash2, Edit, Loader2, X } from 'lucide-react';
+import { Building2, Plus, Search, MapPin, Briefcase, Trash2, Edit, X } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import LoadingSpinner from '../components/LoadingSpinner';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const ManageCompanies = () => {
     const { user } = useAuth();
@@ -41,9 +43,9 @@ const ManageCompanies = () => {
     const handleApply = async (companyId) => {
         try {
             await api.post(`/applications/apply/${companyId}`);
-            alert('Application submitted successfully!');
+            toast.success('Application submitted successfully!');
         } catch (error) {
-            alert(error.response?.data?.message || 'Failed to apply');
+            toast.error(error.response?.data?.message || 'Failed to apply');
         }
     };
 
@@ -52,8 +54,9 @@ const ManageCompanies = () => {
         try {
             await api.delete(`/companies/${id}`);
             fetchCompanies();
+            toast.success('Company deleted successfully');
         } catch (error) {
-            alert('Failed to delete company');
+            toast.error('Failed to delete company');
         }
     };
 
@@ -78,8 +81,9 @@ const ManageCompanies = () => {
             setEditingCompany(null);
             setFormData({ name: '', location: '', role: '', ctc: '', description: '', deadline: '' });
             fetchCompanies();
+            toast.success(editingCompany ? 'Company updated successfully' : 'Company added successfully');
         } catch (error) {
-            alert('Failed to save company: ' + (error.response?.data?.message || error.message));
+            toast.error('Failed to save company: ' + (error.response?.data?.message || error.message));
         }
     };
 
@@ -104,7 +108,7 @@ const ManageCompanies = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-slate-950">
-                <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+                <LoadingSpinner size="lg" />
             </div>
         );
     }

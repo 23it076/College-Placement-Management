@@ -3,8 +3,10 @@ import Card from '../components/Card';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import api from '../services/api';
-import { Mail, GraduationCap, Code, FileText, Loader2 } from 'lucide-react';
+import { Mail, GraduationCap, Code, FileText } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import LoadingSpinner from '../components/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 const Profile = () => {
     const [profile, setProfile] = useState(null);
@@ -17,6 +19,7 @@ const Profile = () => {
         email: '',
         department: '',
         cgpa: '',
+        backlogs: '',
         skills: '',
         resume: '',
     });
@@ -32,6 +35,7 @@ const Profile = () => {
                     email: response.data?.email ?? '',
                     department: response.data?.department ?? '',
                     cgpa: response.data?.cgpa !== undefined && response.data?.cgpa !== null ? String(response.data.cgpa) : '',
+                    backlogs: response.data?.backlogs !== undefined && response.data?.backlogs !== null ? String(response.data.backlogs) : '0',
                     skills: Array.isArray(response.data?.skills) ? response.data.skills.join(', ') : (response.data?.skills ?? ''),
                     resume: response.data?.resume ?? '',
                 });
@@ -53,6 +57,7 @@ const Profile = () => {
             const updatedData = {
                 ...formData,
                 cgpa: formData.cgpa === '' ? undefined : parseFloat(formData.cgpa),
+                backlogs: formData.backlogs === '' ? undefined : parseInt(formData.backlogs, 10),
                 skills: formData.skills
                     .split(',')
                     .map((s) => s.trim())
@@ -65,6 +70,7 @@ const Profile = () => {
                 email: response.data?.email ?? '',
                 department: response.data?.department ?? '',
                 cgpa: response.data?.cgpa !== undefined && response.data?.cgpa !== null ? String(response.data.cgpa) : '',
+                backlogs: response.data?.backlogs !== undefined && response.data?.backlogs !== null ? String(response.data.backlogs) : '0',
                 skills: Array.isArray(response.data?.skills) ? response.data.skills.join(', ') : (response.data?.skills ?? ''),
                 resume: response.data?.resume ?? '',
             });
@@ -82,7 +88,7 @@ const Profile = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-slate-950">
-                <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+                <LoadingSpinner size="lg" />
             </div>
         );
     }
@@ -154,7 +160,7 @@ const Profile = () => {
                                 <GraduationCap size={20} className="text-indigo-400" />
                                 Academic Details
                             </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                 <Input
                                     label="Department"
                                     value={formData.department}
@@ -166,6 +172,13 @@ const Profile = () => {
                                     type="number"
                                     value={formData.cgpa}
                                     onChange={(e) => setFormData({ ...formData, cgpa: e.target.value })}
+                                    disabled={!isEditing}
+                                />
+                                <Input
+                                    label="Active Backlogs"
+                                    type="number"
+                                    value={formData.backlogs}
+                                    onChange={(e) => setFormData({ ...formData, backlogs: e.target.value })}
                                     disabled={!isEditing}
                                 />
                             </div>
@@ -222,9 +235,15 @@ const Profile = () => {
                                                     resume: res.data.student.resume,
                                                     skills: res.data.student.skills.join(', ')
                                                 }));
-                                                alert(`AI Parser Analysis: ${res.data.aiAnalysis.notes}\nDetected Skills: ${res.data.aiAnalysis.detectedSkills.join(', ')}`);
+                                                toast.success(
+                                                    <div>
+                                                        <strong>AI Parser Analysis:</strong> {res.data.aiAnalysis.notes}<br />
+                                                        <strong>Detected Skills:</strong> {res.data.aiAnalysis.detectedSkills.join(', ')}
+                                                    </div>,
+                                                    { duration: 6000 }
+                                                );
                                             } catch (err) {
-                                                alert('Failed to upload resume: ' + (err.response?.data?.message || err.message));
+                                                toast.error('Failed to upload resume: ' + (err.response?.data?.message || err.message));
                                             } finally {
                                                 setSaving(false);
                                             }

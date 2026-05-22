@@ -5,6 +5,7 @@ const {
     updateStudentProfile,
     getStudents,
     getStudentById,
+    exportStudents,
 } = require('../controllers/studentController');
 const { protect, admin } = require('../middleware/authMiddleware');
 
@@ -12,14 +13,14 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-const uploadDir = path.join(__dirname, '../uploads');
+const uploadDir = path.join(__dirname, '../uploads/resumes');
 if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
+    fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
     destination(req, file, cb) {
-        cb(null, 'uploads/');
+        cb(null, 'uploads/resumes/');
     },
     filename(req, file, cb) {
         cb(null, `${req.user._id}-resume-${Date.now()}${path.extname(file.originalname)}`);
@@ -50,8 +51,10 @@ router.put('/resume', protect, upload.single('resume'), async (req, res, next) =
     await uploadResume(req, res, next);
 });
 
+// Export Students (MUST be before /:id and / to avoid collision if they use router.use/etc)
+router.get('/export', protect, admin, exportStudents);
 
-router.route('/:id').get(protect, admin, getStudentById);
 router.route('/').get(protect, admin, getStudents);
+router.route('/:id').get(protect, admin, getStudentById);
 
 module.exports = router;

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../components/Card';
 import Button from '../components/Button';
-import { Users, Search, GraduationCap, Download, MoreVertical, Loader2, Eye } from 'lucide-react';
+import { Users, Search, GraduationCap, Download, MoreVertical, Eye } from 'lucide-react';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import api from '../services/api';
@@ -10,6 +11,7 @@ const ManageStudents = () => {
     const navigate = useNavigate();
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [exporting, setExporting] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
@@ -36,10 +38,30 @@ const ManageStudents = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-slate-950">
-                <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+                <LoadingSpinner size="lg" />
             </div>
         );
     }
+
+    const handleExport = async () => {
+        try {
+            setExporting(true);
+            const response = await api.get('/students/export', { responseType: 'blob' });
+            
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'students_export.xlsx');
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+        } catch (error) {
+            console.error('Error exporting data:', error);
+            alert('Failed to export student data');
+        } finally {
+            setExporting(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-slate-950 pt-24 text-slate-100">
@@ -50,9 +72,14 @@ const ManageStudents = () => {
                         <h1 className="text-3xl font-bold gradient-text">Student Records</h1>
                         <p className="text-slate-400 mt-1">Monitor and manage student profiles and placement eligible data.</p>
                     </div>
-                    <Button variant="outline" className="flex items-center gap-2">
-                        <Download size={18} />
-                        Export Data
+                    <Button 
+                        variant="outline" 
+                        className="flex items-center gap-2"
+                        onClick={handleExport}
+                        disabled={exporting}
+                    >
+                        {exporting ? <LoadingSpinner size="sm" /> : <Download size={18} />}
+                        {exporting ? 'Exporting...' : 'Export Data'}
                     </Button>
                 </header>
 
@@ -75,6 +102,7 @@ const ManageStudents = () => {
                                 <th className="px-6 py-4">Student Name</th>
                                 <th className="px-6 py-4">Department</th>
                                 <th className="px-6 py-4">CGPA</th>
+                                <th className="px-6 py-4">Backlogs</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -94,6 +122,11 @@ const ManageStudents = () => {
                                     <td className="px-6 py-4">
                                         <span className={`px-2 py-1 rounded-md text-xs font-bold ${student.cgpa >= 8.5 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>
                                             {student.cgpa}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`px-2 py-1 rounded-md text-xs font-bold ${student.backlogs > 0 ? 'bg-orange-500/10 text-orange-400' : 'bg-slate-800 text-slate-400'}`}>
+                                            {student.backlogs ?? 0}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">

@@ -31,6 +31,31 @@ const companySchema = new mongoose.Schema({
             type: [String],
             required: true,
         },
+        maxBacklogs: {
+            type: Number,
+            default: 0,
+        },
+    },
+    prePlacementTalkDate: {
+        type: Date,
+    },
+    prePlacementTalkVenue: {
+        type: String,
+    },
+    aptitudeTestDate: {
+        type: Date,
+    },
+    aptitudeTestVenue: {
+        type: String,
+    },
+    interviewDate: {
+        type: Date,
+    },
+    interviewVenue: {
+        type: String,
+    },
+    instructions: {
+        type: String,
     },
     description: {
         type: String,

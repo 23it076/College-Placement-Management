@@ -14,6 +14,16 @@ const registerUser = async (req, res) => {
     }
 
     try {
+        // Enforce role restrictions
+        if (role === 'admin' || role === 'superadmin') {
+            // Note: In a true secure environment, this endpoint should not be public at all.
+            // Since it is public here, to correctly restrict admin creation, we check if the requester is a superadmin. 
+            // If they aren't authenticated with a token (public signup), we reject admin/superadmin creation.
+            if (!req.user || req.user.role !== 'superadmin') {
+                return res.status(403).json({ message: 'Only a superadmin can create an admin or superadmin account' });
+            }
+        }
+
         const userExists = await Student.findOne({ email });
 
         if (userExists) {
@@ -67,6 +77,7 @@ const authUser = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                isFirstLogin: user.isFirstLogin,
                 token: generateToken(user._id, user.role),
             });
         } else {
@@ -84,4 +95,31 @@ const generateToken = (id, role) => {
     });
 };
 
-module.exports = { registerUser, authUser };
+// @desc    Change Password
+// @route   PUT /api/auth/change-password
+// @access  Private
+const changePassword = async (req, res) => {
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    }
+
+    try {
+        const user = await Student.findById(req.user._id).select('+password');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.password = newPassword;
+        user.isFirstLogin = false; // Flag that password has been changed
+        await user.save();
+
+        res.json({ message: 'Password updated successfully' });
+    } catch (error) {
+        console.error('Change Password Error:', error);
+        res.status(500).json({ message: 'Server error updating password' });
+    }
+};
+
+module.exports = { registerUser, authUser, changePassword };

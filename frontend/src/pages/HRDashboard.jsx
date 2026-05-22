@@ -4,7 +4,9 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { Users, FileCheck, TrendingUp, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Users, FileCheck, TrendingUp, CheckCircle, XCircle } from 'lucide-react';
+import LoadingSpinner from '../components/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 const HRDashboard = () => {
     const { user } = useAuth();
@@ -29,9 +31,9 @@ const HRDashboard = () => {
 
                 setStats([
                     { label: 'Total Applicants', count: apps.length, icon: Users, color: 'text-blue-400' },
-                    { label: 'Pending Reviews', count: apps.filter(a => a.status === 'pending').length, icon: FileCheck, color: 'text-amber-400' },
-                    { label: 'Shortlisted', count: apps.filter(a => a.status === 'shortlisted').length, icon: TrendingUp, color: 'text-indigo-400' },
-                    { label: 'Hired', count: apps.filter(a => a.status === 'hired').length, icon: CheckCircle, color: 'text-emerald-400' },
+                    { label: 'Pending Reviews', count: apps.filter(a => a.status === 'Applied').length, icon: FileCheck, color: 'text-amber-400' },
+                    { label: 'Shortlisted', count: apps.filter(a => a.status === 'Shortlisted').length, icon: TrendingUp, color: 'text-indigo-400' },
+                    { label: 'Hired', count: apps.filter(a => a.status === 'Selected').length, icon: CheckCircle, color: 'text-emerald-400' },
                 ]);
 
                 setApplications(apps);
@@ -54,19 +56,20 @@ const HRDashboard = () => {
             const updatedApps = applications.map(a => a._id === appId ? { ...a, status: res.data.status } : a);
             setStats([
                 { label: 'Total Applicants', count: updatedApps.length, icon: Users, color: 'text-blue-400' },
-                { label: 'Pending Reviews', count: updatedApps.filter(a => a.status === 'pending').length, icon: FileCheck, color: 'text-amber-400' },
-                { label: 'Shortlisted', count: updatedApps.filter(a => a.status === 'shortlisted').length, icon: TrendingUp, color: 'text-indigo-400' },
-                { label: 'Hired', count: updatedApps.filter(a => a.status === 'hired').length, icon: CheckCircle, color: 'text-emerald-400' },
+                { label: 'Pending Reviews', count: updatedApps.filter(a => a.status === 'Applied').length, icon: FileCheck, color: 'text-amber-400' },
+                { label: 'Shortlisted', count: updatedApps.filter(a => a.status === 'Shortlisted').length, icon: TrendingUp, color: 'text-indigo-400' },
+                { label: 'Hired', count: updatedApps.filter(a => a.status === 'Selected').length, icon: CheckCircle, color: 'text-emerald-400' },
             ]);
+            toast.success('Status updated successfully');
         } catch (error) {
-            alert('Failed to update status: ' + (error.response?.data?.message || error.message));
+            toast.error('Failed to update status: ' + (error.response?.data?.message || error.message));
         }
     };
 
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+                <LoadingSpinner size="lg" />
             </div>
         );
     }
@@ -145,25 +148,25 @@ const HRDashboard = () => {
                                         )}
                                     </td>
                                     <td className="py-4 px-4">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${app.status === 'hired' ? 'bg-emerald-500/10 text-emerald-400' :
-                                                app.status === 'rejected' ? 'bg-rose-500/10 text-rose-400' :
-                                                    app.status === 'shortlisted' ? 'bg-indigo-500/10 text-indigo-400' :
-                                                        'bg-amber-500/10 text-amber-400'
+                                        <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${app.status === 'Selected' ? 'bg-emerald-500/10 text-emerald-400' :
+                                            app.status === 'Rejected' ? 'bg-rose-500/10 text-rose-400' :
+                                                app.status === 'Shortlisted' ? 'bg-indigo-500/10 text-indigo-400' :
+                                                    'bg-amber-500/10 text-amber-400'
                                             }`}>
                                             {app.status}
                                         </span>
                                     </td>
                                     <td className="py-4 px-4 text-right space-x-2">
-                                        {app.status === 'pending' && (
+                                        {app.status === 'Applied' && (
                                             <>
-                                                <button onClick={() => handleUpdateStatus(app._id, 'shortlisted')} className="px-3 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 text-xs font-semibold hover:bg-indigo-500/30 transition-all">Shortlist</button>
-                                                <button onClick={() => handleUpdateStatus(app._id, 'rejected')} className="px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-400 text-xs font-semibold hover:bg-rose-500/30 transition-all">Reject</button>
+                                                <button onClick={() => handleUpdateStatus(app._id, 'Shortlisted')} className="px-3 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 text-xs font-semibold hover:bg-indigo-500/30 transition-all">Shortlist</button>
+                                                <button onClick={() => handleUpdateStatus(app._id, 'Rejected')} className="px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-400 text-xs font-semibold hover:bg-rose-500/30 transition-all">Reject</button>
                                             </>
                                         )}
-                                        {app.status === 'shortlisted' && (
+                                        {app.status === 'Shortlisted' && (
                                             <>
-                                                <button onClick={() => handleUpdateStatus(app._id, 'hired')} className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/30 transition-all">Hire</button>
-                                                <button onClick={() => handleUpdateStatus(app._id, 'rejected')} className="px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-400 text-xs font-semibold hover:bg-rose-500/30 transition-all">Reject</button>
+                                                <button onClick={() => handleUpdateStatus(app._id, 'Selected')} className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/30 transition-all">Hire</button>
+                                                <button onClick={() => handleUpdateStatus(app._id, 'Rejected')} className="px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-400 text-xs font-semibold hover:bg-rose-500/30 transition-all">Reject</button>
                                             </>
                                         )}
                                     </td>

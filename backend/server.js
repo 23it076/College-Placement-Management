@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
 
-console.log("🚀 Starting server...");
+console.log("Starting server...");
 
 dotenv.config();
 
@@ -29,12 +29,13 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 // IMPORTANT: load routes
-console.log("✅ Loading auth routes...");
+console.log("Loading auth routes...");
 app.use('/api/auth', require('./routes/authRoutes'));
 
 app.use('/api/students', require('./routes/studentRoutes'));
 app.use('/api/companies', require('./routes/companyRoutes'));
 app.use('/api/applications', require('./routes/applicationRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 // Error handler
 app.use((err, req, res, next) => {
@@ -48,5 +49,5 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-    console.log(`🔥 Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });

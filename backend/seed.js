@@ -17,7 +17,15 @@ const companies = [
             cgpa: 8.5,
             skills: ['Data Structures', 'Algorithms', 'System Design'],
             branches: ['Computer Science', 'Information Technology'],
+            maxBacklogs: 0,
         },
+        prePlacementTalkDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
+        prePlacementTalkVenue: 'Main Auditorium',
+        aptitudeTestDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+        aptitudeTestVenue: 'Computer Lab 1',
+        interviewDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
+        interviewVenue: 'Conference Room A',
+        instructions: 'Please bring a physical copy of your resume and college ID.',
         description: 'Design and build next-generation software applications.',
         deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     },
@@ -30,7 +38,15 @@ const companies = [
             cgpa: 8.0,
             skills: ['Azure', 'C#', 'Cloud Computing'],
             branches: ['Computer Science', 'Electronics'],
+            maxBacklogs: 1,
         },
+        prePlacementTalkDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+        prePlacementTalkVenue: 'Seminar Hall B',
+        aptitudeTestDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
+        aptitudeTestVenue: 'Online',
+        interviewDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        interviewVenue: 'Virtual',
+        instructions: 'Ensure stable internet connection for the aptitude test.',
         description: 'Build and maintain cloud infrastructure at scale.',
         deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 days from now
     },
@@ -43,6 +59,7 @@ const companies = [
             cgpa: 7.5,
             skills: ['Java', 'Spring Boot', 'AWS'],
             branches: ['Computer Science', 'Mechanical'],
+            maxBacklogs: 2,
         },
         description: 'Create scalable backend services for e-commerce.',
         deadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
@@ -51,6 +68,17 @@ const companies = [
 
 const students = [
     {
+        name: 'Super Admin',
+        email: 'superadmin@college.edu',
+        password: 'superadminpassword',
+        role: 'superadmin',
+        department: 'System Management',
+        cgpa: 10,
+        skills: ['Administration', 'Security'],
+        backlogs: 0,
+        isFirstLogin: false,
+    },
+    {
         name: 'Admin User',
         email: 'admin@college.edu',
         password: 'adminpassword',
@@ -58,6 +86,19 @@ const students = [
         department: 'Administration',
         cgpa: 10,
         skills: ['Management'],
+        backlogs: 0,
+        isFirstLogin: false,
+    },
+    {
+        name: 'HR Google',
+        email: 'hr@google.com',
+        password: 'hrpassword',
+        role: 'hr',
+        department: 'Human Resources',
+        cgpa: 9.0,
+        skills: ['Recruitment', 'Communication'],
+        backlogs: 0,
+        isFirstLogin: false,
     },
     {
         name: 'John Doe',
@@ -67,6 +108,8 @@ const students = [
         department: 'Computer Science',
         cgpa: 9.2,
         skills: ['React', 'Node.js', 'MongoDB'],
+        backlogs: 0,
+        isFirstLogin: false,
     },
     {
         name: 'Jane Smith',
@@ -76,6 +119,8 @@ const students = [
         department: 'Information Technology',
         cgpa: 8.8,
         skills: ['Python', 'Machine Learning', 'SQL'],
+        backlogs: 1,
+        isFirstLogin: false,
     },
 ];
 
@@ -94,23 +139,26 @@ const seedDB = async () => {
         const createdCompanies = await Company.insertMany(companies);
         console.log('Seeded Companies');
 
-        // Seed Students (Need to handle password hashing)
-        // InsertMany doesn't trigger pre-save hooks, so we'll create them one by one or hash manually
+        // Seed Students
+        // Find Google for HR attachment
+        const google = await Company.findOne({ name: 'Google' });
+
         for (let studentData of students) {
-            // Note: Student model has a pre-save hook for hashing, but let's be safe and use .create
+            if (studentData.role === 'hr' && google) {
+                studentData.companyId = google._id;
+            }
             await Student.create(studentData);
         }
         console.log('Seeded Students');
 
         // Seed some sample applications
         const john = await Student.findOne({ email: 'john@college.edu' });
-        const google = await Company.findOne({ name: 'Google' });
         const amazon = await Company.findOne({ name: 'Amazon' });
 
         if (john && google && amazon) {
             await Application.create([
-                { student: john._id, company: google._id, status: 'pending' },
-                { student: john._id, company: amazon._id, status: 'shortlisted' },
+                { student: john._id, company: google._id, status: 'Applied' },
+                { student: john._id, company: amazon._id, status: 'Shortlisted' },
             ]);
             console.log('Seeded Applications');
         }

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import Button from '../components/Button';
-import { Mail, GraduationCap, Code, FileText, Loader2, ArrowLeft } from 'lucide-react';
+import { Mail, GraduationCap, Code, FileText, ArrowLeft } from 'lucide-react';
+import LoadingSpinner from '../components/LoadingSpinner';
 import Navbar from '../components/Navbar';
 import api from '../services/api';
 
@@ -32,7 +33,7 @@ const StudentDetails = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-slate-950">
-                <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+                <LoadingSpinner size="lg" />
             </div>
         );
     }
@@ -102,7 +103,7 @@ const StudentDetails = () => {
                                 <GraduationCap size={20} className="text-indigo-400" />
                                 Academic Details
                             </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                 <div>
                                     <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Department</p>
                                     <p className="text-slate-200">{student?.department}</p>
@@ -111,6 +112,12 @@ const StudentDetails = () => {
                                     <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">CGPA</p>
                                     <span className="px-2 py-1 rounded-md bg-indigo-500/10 text-indigo-400 text-sm font-bold border border-indigo-500/20">
                                         {student?.cgpa}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Active Backlogs</p>
+                                    <span className={`px-2 py-1 rounded-md text-sm font-bold border ${student?.backlogs > 0 ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
+                                        {student?.backlogs ?? 0}
                                     </span>
                                 </div>
                             </div>

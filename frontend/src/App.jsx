@@ -8,12 +8,27 @@ import ManageStudents from './pages/ManageStudents';
 import StudentDetails from './pages/StudentDetails';
 import StudentApplications from './pages/StudentApplications';
 import Profile from './pages/Profile';
+import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
     return (
         <Router>
             <div className="w-full min-h-screen bg-slate-950">
+                <Toaster position="top-right" toastOptions={{
+                    style: {
+                        background: '#1e293b',
+                        color: '#fff',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                    },
+                    success: {
+                        iconTheme: {
+                            primary: '#10b981',
+                            secondary: '#1e293b',
+                        },
+                    },
+                }} />
                 <Routes>
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
@@ -31,7 +46,7 @@ function App() {
 
                     {/* Default Redirects */}
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="*" element={<NotFound />} />
                 </Routes>
             </div>
         </Router>

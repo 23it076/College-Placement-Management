@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import Card from '../components/Card';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { Briefcase, GraduationCap, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { Briefcase, GraduationCap, CheckCircle, Clock } from 'lucide-react';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const StudentDashboard = () => {
     const { user } = useAuth();
@@ -14,22 +15,25 @@ const StudentDashboard = () => {
         { label: 'Offers', count: 0, icon: CheckCircle, color: 'text-emerald-400' },
     ]);
     const [recentCompanies, setRecentCompanies] = useState([]);
+    const [profileData, setProfileData] = useState(user);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const [companiesRes, applicationsRes] = await Promise.all([
+                const [companiesRes, applicationsRes, profileRes] = await Promise.all([
                     api.get('/companies'),
-                    api.get('/applications/my')
+                    api.get('/applications/my'),
+                    api.get('/students/profile')
                 ]);
 
                 const apps = applicationsRes.data;
+                setProfileData(profileRes.data);
                 const counts = {
                     total: companiesRes.data.length,
                     applied: apps.length,
-                    interviews: apps.filter(a => a.status === 'shortlisted').length,
-                    offers: apps.filter(a => a.status === 'hired').length
+                    interviews: apps.filter(a => a.status === 'Shortlisted').length,
+                    offers: apps.filter(a => a.status === 'Selected').length
                 };
 
                 setStats([
@@ -53,7 +57,7 @@ const StudentDashboard = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+                <LoadingSpinner size="lg" />
             </div>
         );
     }
@@ -110,15 +114,15 @@ const StudentDashboard = () => {
                                 {user?.name?.charAt(0)}
                             </div>
                             <div>
-                                <p className="font-bold text-white">{user?.name}</p>
-                                <p className="text-sm text-slate-400">CGPA: {user?.cgpa || 'N/A'}</p>
+                                <p className="font-bold text-white">{profileData?.name}</p>
+                                <p className="text-sm text-slate-400">CGPA: {profileData?.cgpa || 'N/A'}</p>
                             </div>
                         </div>
                         <div className="pt-6 border-t border-white/5 space-y-4">
                             <div>
                                 <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Skills</p>
                                 <div className="flex flex-wrap gap-2">
-                                    {(user?.skills || []).map(skill => (
+                                    {(profileData?.skills || []).map(skill => (
                                         <span key={skill} className="px-2 py-1 rounded-md bg-slate-800 text-slate-300 text-xs">{skill}</span>
                                     ))}
                                 </div>

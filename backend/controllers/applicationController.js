@@ -3,7 +3,7 @@ const Application = require('../models/Application');
 // @desc    Apply for a company
 // @route   POST /api/applications/apply/:companyId
 // @access  Private/Student
-const applyForCompany = async (req, res) => {
+const applyToJob = async (req, res) => {
     try {
         const { companyId } = req.params;
 
@@ -19,7 +19,11 @@ const applyForCompany = async (req, res) => {
 
         if (company.eligibility) {
             if (student.cgpa < company.eligibility.cgpa) {
-                return res.status(403).json({ message: `Eligibility failed: Minimum CGPA of ${company.eligibility.cgpa} is required.` });
+                return res.status(403).json({ message: 'You do not meet the eligibility criteria (CGPA)' });
+            }
+
+            if (student.backlogs > (company.eligibility.maxBacklogs || 0)) {
+                return res.status(403).json({ message: 'You do not meet the eligibility criteria (Backlogs)' });
             }
 
             if (company.eligibility.branches && company.eligibility.branches.length > 0) {
@@ -28,7 +32,7 @@ const applyForCompany = async (req, res) => {
                 );
 
                 if (!isBranchEligible) {
-                    return res.status(403).json({ message: `Eligibility failed: Your branch (${student.department}) is not eligible.` });
+                    return res.status(403).json({ message: 'You do not meet the eligibility criteria' });
                 }
             }
         }
@@ -105,9 +109,9 @@ const updateApplicationStatus = async (req, res) => {
             const updatedApplication = await application.save();
 
             // Trigger notification
-            if (status === 'shortlisted' || status === 'hired') {
-                const { sendStatusEmail } = require('../utils/emailService');
-                await sendStatusEmail(
+            if (status === 'Shortlisted' || status === 'Selected') {
+                const { sendEmail } = require('../utils/emailService');
+                await sendEmail(
                     application.student.email,
                     status,
                     application.company.name,
@@ -138,9 +142,111 @@ const getApplications = async (req, res) => {
     }
 };
 
+// @desc    Get analytics
+// @route   GET /api/applications/analytics
+// @access  Private/Admin
+const getAnalytics = async (req, res) => {
+    try {
+        const Student = require('../models/Student');
+        const Company = require('../models/Company');
+
+        // Total Students
+        const totalStudentsCount = await Student.countDocuments();
+
+        // Get all hired applications to base stats off of
+        const hiredApplications = await Application.find({ status: 'Selected' })
+            .populate('company', 'name ctc')
+            .populate('student', 'department');
+
+        const totalPlacedStudents = hiredApplications.length;
+
+        // Calculate highest package
+        let highestPackage = 0;
+        hiredApplications.forEach(app => {
+            if (app.company && app.company.ctc > highestPackage) {
+                highestPackage = app.company.ctc;
+            }
+        });
+
+        // Company wise placements
+        const companyPlacementsMap = {};
+        hiredApplications.forEach(app => {
+            if (app.company) {
+                const companyName = app.company.name;
+                companyPlacementsMap[companyName] = (companyPlacementsMap[companyName] || 0) + 1;
+            }
+        });
+        const companyWisePlacements = Object.entries(companyPlacementsMap).map(([name, count]) => ({
+            name,
+            placed: count
+        }));
+
+        // Branch wise placements  
+        const branchPlacementsMap = {};
+        hiredApplications.forEach(app => {
+            if (app.student && app.student.department) {
+                const branch = app.student.department;
+                branchPlacementsMap[branch] = (branchPlacementsMap[branch] || 0) + 1;
+            }
+        });
+
+        // Combine with total students per branch
+        const students = await Student.find({}, 'department');
+        const branchTotalsMap = {};
+        students.forEach(s => {
+            const branch = s.department || 'Unknown';
+            branchTotalsMap[branch] = (branchTotalsMap[branch] || 0) + 1;
+        });
+
+        const branchWisePlacements = Object.keys(branchTotalsMap).map(branch => ({
+            name: branch,
+            Students: branchTotalsMap[branch],
+            Placed: branchPlacementsMap[branch] || 0
+        }));
+
+        res.json({
+            totalStudents: totalStudentsCount,
+            totalPlacedStudents,
+            highestPackage,
+            companyWisePlacements,
+            branchWisePlacements
+        });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get Admin Dashboard Stats
+// @route   GET /api/admin/stats
+// @access  Private/Admin|Superadmin
+const getDashboardStats = async (req, res) => {
+    try {
+        const Student = require('../models/Student');
+        const Company = require('../models/Company');
+
+        const totalStudents = await Student.countDocuments({ role: 'student' });
+        const totalCompanies = await Company.countDocuments();
+        const totalApplications = await Application.countDocuments();
+        const totalSelectedStudents = await Application.countDocuments({ status: 'Selected' });
+
+        res.json({
+            totalStudents,
+            totalCompanies,
+            totalApplications,
+            totalSelectedStudents
+        });
+    } catch (error) {
+        console.error('Stats Error:', error);
+        res.status(500).json({ message: 'Server error fetching stats' });
+    }
+};
+
 module.exports = {
     getApplications,
-    applyForCompany,
+    getAnalytics,
+    getDashboardStats,
+    applyToJob,
     getMyApplications,
     getApplicationsByCompany,
     updateApplicationStatus,

@@ -44,6 +44,14 @@ const updateStudentProfile = async (req, res) => {
                 nextCgpa = Number.isFinite(parsed) ? parsed : undefined;
             }
 
+            let nextBacklogs = req.body.backlogs;
+            if (typeof nextBacklogs === 'string' && nextBacklogs.trim() !== '') {
+                const parsed = parseInt(nextBacklogs, 10);
+                nextBacklogs = Number.isInteger(parsed) ? parsed : undefined;
+            } else if (typeof nextBacklogs === 'number') {
+                nextBacklogs = Number.isInteger(nextBacklogs) ? nextBacklogs : undefined;
+            }
+
             let nextSkills = req.body.skills;
             if (typeof nextSkills === 'string') {
                 nextSkills = nextSkills
@@ -60,6 +68,7 @@ const updateStudentProfile = async (req, res) => {
             if (nextEmail !== undefined) student.email = nextEmail || student.email;
             if (nextDepartment !== undefined) student.department = nextDepartment || student.department;
             if (nextCgpa !== undefined) student.cgpa = nextCgpa;
+            if (nextBacklogs !== undefined) student.backlogs = nextBacklogs;
             if (nextSkills !== undefined) student.skills = nextSkills;
             if (nextResume !== undefined) student.resume = nextResume || '';
 
@@ -160,4 +169,47 @@ const uploadResume = async (req, res) => {
     }
 };
 
-module.exports = { getStudentProfile, updateStudentProfile, getStudents, getStudentById, uploadResume };
+// @desc    Export all students to Excel
+// @route   GET /api/students/export
+// @access  Private/Admin
+const exportStudents = async (req, res) => {
+    try {
+        const ExcelJS = require('exceljs');
+        const students = await Student.find({ role: 'student' }).select('-password');
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Students');
+
+        worksheet.columns = [
+            { header: 'Name', key: 'name', width: 25 },
+            { header: 'Email', key: 'email', width: 30 },
+            { header: 'Department', key: 'department', width: 20 },
+            { header: 'CGPA', key: 'cgpa', width: 10 },
+            { header: 'Skills', key: 'skills', width: 40 },
+        ];
+
+        // Make header row bold
+        worksheet.getRow(1).font = { bold: true };
+
+        students.forEach((student) => {
+            worksheet.addRow({
+                name: student.name,
+                email: student.email,
+                department: student.department || 'N/A',
+                cgpa: student.cgpa || 'N/A',
+                skills: student.skills ? student.skills.join(', ') : 'N/A',
+            });
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="students_export.xlsx"');
+
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error('Export Error:', error);
+        res.status(500).json({ message: 'Error exporting students data' });
+    }
+};
+
+module.exports = { getStudentProfile, updateStudentProfile, getStudents, getStudentById, uploadResume, exportStudents };

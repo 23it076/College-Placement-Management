@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import Card from '../components/Card';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { Users, Building2, FileCheck, TrendingUp, Loader2 } from 'lucide-react';
+import { Users, Building2, FileCheck, TrendingUp } from 'lucide-react';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const COLORS = ['#10b981', '#f43f5e']; // Emerald for Placed, Rose for Unplaced
@@ -14,55 +15,51 @@ const AdminDashboard = () => {
         { label: 'Total Students', count: 0, icon: Users, color: 'text-blue-400', link: '/students' },
         { label: 'Partner Companies', count: 0, icon: Building2, color: 'text-indigo-400', link: '/companies' },
         { label: 'Active Applications', count: 0, icon: FileCheck, color: 'text-emerald-400', link: '/applications' },
-        { label: 'Placement Rate', count: '0%', icon: TrendingUp, color: 'text-rose-400' },
+        { label: 'Highest Package', count: '₹0 L', icon: TrendingUp, color: 'text-amber-400' },
     ]);
     const [pendingApps, setPendingApps] = useState([]);
-    const [analytics, setAnalytics] = useState({ pieData: [], barData: [] });
+    const [analytics, setAnalytics] = useState({ pieData: [], branchData: [], companyData: [] });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const [studentsRes, companiesRes, appsRes] = await Promise.all([
-                    api.get('/students'),
+                const [companiesRes, appsRes, analyticsRes] = await Promise.all([
                     api.get('/companies'),
-                    api.get('/applications')
+                    api.get('/applications'),
+                    api.get('/applications/analytics')
                 ]);
 
                 const allApps = appsRes.data;
-                const placedCount = allApps.filter(a => a.status === 'hired').length;
-                const placementRate = studentsRes.data.length > 0
-                    ? Math.round((placedCount / studentsRes.data.length) * 100)
-                    : 0;
+                const {
+                    totalStudents,
+                    totalPlacedStudents,
+                    highestPackage,
+                    companyWisePlacements,
+                    branchWisePlacements
+                } = analyticsRes.data;
+
+                // Format highest package (assuming it's in LPA, e.g., 12)
+                const formattedPackage = highestPackage > 0 ? `₹${highestPackage} L` : 'N/A';
 
                 setStats([
-                    { label: 'Total Students', count: studentsRes.data.length, icon: Users, color: 'text-blue-400', link: '/students' },
+                    { label: 'Total Students', count: totalStudents, icon: Users, color: 'text-blue-400', link: '/students' },
                     { label: 'Partner Companies', count: companiesRes.data.length, icon: Building2, color: 'text-indigo-400', link: '/companies' },
                     { label: 'Active Applications', count: allApps.length, icon: FileCheck, color: 'text-emerald-400', link: '/applications' },
-                    { label: 'Placement Rate', count: `${placementRate}%`, icon: TrendingUp, color: 'text-rose-400' },
+                    { label: 'Highest Package', count: formattedPackage, icon: TrendingUp, color: 'text-amber-400' },
                 ]);
 
                 // Analytics setup
                 const pieData = [
-                    { name: 'Placed', value: placedCount },
-                    { name: 'Unplaced', value: studentsRes.data.length - placedCount }
+                    { name: 'Placed', value: totalPlacedStudents },
+                    { name: 'Unplaced', value: totalStudents - totalPlacedStudents }
                 ];
 
-                const deptMap = {};
-                studentsRes.data.forEach(s => {
-                    const dept = s.department || 'Unknown';
-                    if (!deptMap[dept]) deptMap[dept] = { name: dept, Students: 0, Placed: 0 };
-                    deptMap[dept].Students += 1;
+                setAnalytics({ 
+                    pieData, 
+                    branchData: branchWisePlacements,
+                    companyData: companyWisePlacements
                 });
-
-                allApps.filter(a => a.status === 'hired').forEach(a => {
-                    const dept = a.student?.department || 'Unknown';
-                    if (deptMap[dept]) {
-                        deptMap[dept].Placed += 1;
-                    }
-                });
-
-                setAnalytics({ pieData, barData: Object.values(deptMap) });
                 setPendingApps(allApps.filter(a => a.status === 'pending').slice(0, 5));
             } catch (error) {
                 console.error('Error fetching admin dashboard data:', error);
@@ -76,8 +73,8 @@ const AdminDashboard = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+            <div className="flex items-center justify-center min-h-screen bg-slate-950">
+                <LoadingSpinner size="lg" />
             </div>
         );
     }
@@ -139,7 +136,7 @@ const AdminDashboard = () => {
                     <h3 className="text-xl font-bold mb-6">Department Placements</h3>
                     <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={analytics.barData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                            <BarChart data={analytics.branchData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                                 <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                                 <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
@@ -147,6 +144,24 @@ const AdminDashboard = () => {
                                 <Legend />
                                 <Bar dataKey="Students" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                                 <Bar dataKey="Placed" fill="#10b981" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </Card>
+            </div>
+
+            <div className="grid grid-cols-1 gap-8">
+                <Card className="p-8">
+                    <h3 className="text-xl font-bold mb-6">Company Placements</h3>
+                    <div className="h-[300px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={analytics.companyData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                                <RechartsTooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }} cursor={{ fill: '#334155', opacity: 0.4 }} />
+                                <Legend />
+                                <Bar dataKey="placed" name="Placed Students" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>

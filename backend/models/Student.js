@@ -24,8 +24,12 @@ const studentSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['student', 'admin', 'hr'],
+        enum: ['student', 'admin', 'hr', 'superadmin'],
         default: 'student',
+    },
+    isFirstLogin: {
+        type: Boolean,
+        default: true,
     },
     department: {
         type: String,
@@ -42,6 +46,10 @@ const studentSchema = new mongoose.Schema({
     resume: {
         type: String, // URL to resume
         default: '',
+    },
+    backlogs: {
+        type: Number,
+        default: 0,
     },
     companyId: {
         type: mongoose.Schema.Types.ObjectId,

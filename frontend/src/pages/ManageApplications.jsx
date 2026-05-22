@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../components/Card';
-import Button from '../components/Button';
-import { FileCheck, Search, Filter, Check, X, Eye, Loader2 } from 'lucide-react';
+import Input from '../components/Input';
+import { FileCheck, Search, Filter, Check, X, Eye } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import LoadingSpinner from '../components/LoadingSpinner';
+import toast from 'react-hot-toast';
 import api from '../services/api';
 
 const ManageApplications = () => {
@@ -29,13 +31,15 @@ const ManageApplications = () => {
         try {
             await api.put(`/applications/${appId}/status`, { status });
             fetchApplications();
+            toast.success('Status updated successfully');
         } catch (error) {
-            alert('Failed to update status');
+            toast.error('Failed to update status');
         }
     };
 
     const getStatusColor = (status) => {
         switch (status.toLowerCase()) {
+            case 'selected':
             case 'hired':
             case 'approved': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
             case 'rejected': return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
@@ -51,7 +55,7 @@ const ManageApplications = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-slate-950">
-                <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+                <LoadingSpinner size="lg" />
             </div>
         );
     }
@@ -67,7 +71,7 @@ const ManageApplications = () => {
 
                 <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                     <div className="flex bg-slate-900/50 p-1 rounded-xl border border-white/5">
-                        {['all', 'pending', 'shortlisted', 'hired', 'rejected'].map((tab) => (
+                        {['all', 'applied', 'shortlisted', 'selected', 'rejected'].map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setFilter(tab)}
@@ -114,18 +118,18 @@ const ManageApplications = () => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-2">
-                                            {app.status === 'pending' && (
-                                                <button onClick={() => handleUpdateStatus(app._id, 'shortlisted')} className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-all" title="Shortlist">
+                                            {app.status === 'Applied' && (
+                                                <button onClick={() => handleUpdateStatus(app._id, 'Shortlisted')} className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-all" title="Shortlist">
                                                     <Check size={16} />
                                                 </button>
                                             )}
-                                            {app.status === 'shortlisted' && (
-                                                <button onClick={() => handleUpdateStatus(app._id, 'hired')} className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-all" title="Hire">
+                                            {app.status === 'Shortlisted' && (
+                                                <button onClick={() => handleUpdateStatus(app._id, 'Selected')} className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-all" title="Hire">
                                                     <FileCheck size={16} />
                                                 </button>
                                             )}
-                                            {(app.status !== 'rejected' && app.status !== 'hired') && (
-                                                <button onClick={() => handleUpdateStatus(app._id, 'rejected')} className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-all" title="Reject">
+                                            {(app.status !== 'Rejected' && app.status !== 'Selected') && (
+                                                <button onClick={() => handleUpdateStatus(app._id, 'Rejected')} className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-all" title="Reject">
                                                     <X size={16} />
                                                 </button>
                                             )}

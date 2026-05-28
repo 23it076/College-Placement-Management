@@ -2,12 +2,13 @@ import axios from 'axios';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL || 'https://college-placement-management-production.up.railway.app/api',
-    withCredentials: true,
+    withCredentials: true, // Fixes cookie/session rejection issues
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
+// Automatically inject JWT Token for protected routes
 api.interceptors.request.use(
     (config) => {
         const user = JSON.parse(localStorage.getItem('user'));
@@ -21,6 +22,7 @@ api.interceptors.request.use(
     }
 );
 
+// Automatically handle unauthorized errors
 api.interceptors.response.use(
     (response) => response,
     (error) => {

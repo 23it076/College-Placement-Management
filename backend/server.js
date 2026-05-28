@@ -9,23 +9,24 @@ connectDB();
 
 const app = express();
 
-// 1. CORS Middleware (Must be FIRST)
+// 1. CORS Middleware (Must be FIRST before any routes)
 app.use(cors({
     origin: [
         "https://college-placement-management.vercel.app",
         "http://localhost:5173"
     ],
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true
+    allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-// Preflight OPTIONS handler
+// Fix preflight OPTIONS request issue globally
 app.options("*", cors());
 
-// 2. Express JSON Body Parser (Must be SECOND)
+// 2. Body Parser (Must be SECOND)
 app.use(express.json());
 
-// 3. Static Files & Logging
+// 3. Static Files & Logging Middleware
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use((req, res, next) => {
     console.log(`${req.method} ${req.url}`);
@@ -40,7 +41,7 @@ app.use('/api/companies', require('./routes/companyRoutes'));
 app.use('/api/applications', require('./routes/applicationRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 
-// 5. Error Handler
+// 5. Error Handler Middleware
 app.use((err, req, res, next) => {
     console.error('SERVER ERROR:', err);
     res.status(500).json({

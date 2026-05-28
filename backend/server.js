@@ -22,7 +22,7 @@ app.use(express.json());
 
 // Fixed CORS Configuration
 app.use(cors({
-    origin: true, // Automatically allows Vercel or any other origin
+    origin: ['http://localhost:5173', 'https://college-placement-management.vercel.app'],
     credentials: true
 }));
 

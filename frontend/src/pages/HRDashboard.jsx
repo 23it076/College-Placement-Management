@@ -140,7 +140,7 @@ const HRDashboard = () => {
                                     <td className="py-4 px-4 text-slate-300">{app.student?.cgpa || 'N/A'}</td>
                                     <td className="py-4 px-4">
                                         {app.student?.resume ? (
-                                            <a href={`http://localhost:5000${app.student.resume}`} target="_blank" rel="noreferrer" className="text-indigo-400 text-sm hover:underline">
+                                            <a href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${app.student.resume}`} target="_blank" rel="noreferrer" className="text-indigo-400 text-sm hover:underline">
                                                 View PDF
                                             </a>
                                         ) : (

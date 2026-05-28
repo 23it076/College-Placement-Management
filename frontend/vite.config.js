@@ -2,7 +2,6 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-// https://vitejs.dev/config/
 export default defineConfig({
     plugins: [
         react(),
@@ -10,9 +9,10 @@ export default defineConfig({
     ],
     server: {
         port: 3000,
+        // Proxy is only for local dev. Production uses VITE_API_URL.
         proxy: {
             '/api': {
-                target: 'http://localhost:5000',
+                target: 'https://college-placement-management-production.up.railway.app',
                 changeOrigin: true,
             },
         },

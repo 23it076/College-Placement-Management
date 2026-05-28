@@ -270,7 +270,7 @@ const Profile = () => {
                                     {profile?.resume ? (
                                         <a
                                             className="text-indigo-400 text-sm font-bold hover:underline"
-                                            href={`http://localhost:5000${profile.resume}`}
+                                            href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${profile.resume}`}
                                             target="_blank"
                                             rel="noreferrer"
                                         >

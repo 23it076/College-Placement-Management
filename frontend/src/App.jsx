@@ -8,6 +8,7 @@ import ManageStudents from './pages/ManageStudents';
 import StudentDetails from './pages/StudentDetails';
 import StudentApplications from './pages/StudentApplications';
 import Profile from './pages/Profile';
+import AiFeatures from './pages/AiFeatures';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from 'react-hot-toast';
@@ -42,6 +43,7 @@ function App() {
                         <Route path="/students/:id" element={<StudentDetails />} />
                         <Route path="/my-applications" element={<StudentApplications />} />
                         <Route path="/profile" element={<Profile />} />
+                        <Route path="/ai-features" element={<AiFeatures />} />
                     </Route>
 
                     {/* Default Redirects */}

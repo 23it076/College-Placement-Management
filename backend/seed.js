@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
+const dns = require('dns');
+
+// Fix for "querySrv ECONNREFUSED" on restrictive local networks (e.g., college Wi-Fi)
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
 const Student = require('./models/Student');
 const Company = require('./models/Company');
 const Application = require('./models/Application');
@@ -126,47 +131,93 @@ const students = [
 
 const seedDB = async () => {
     try {
+        // 2. Connects using mongoose (uses MONGO_URI from .env)
         await mongoose.connect(process.env.MONGO_URI);
-        console.log('Connected to MongoDB for seeding');
-
-        // Clear existing data
-        await Student.deleteMany({});
-        await Company.deleteMany({});
-        await Application.deleteMany({});
-        console.log('Cleared existing data');
+        console.log('✅ Connected to MongoDB Atlas for seeding');
 
         // Seed Companies
-        const createdCompanies = await Company.insertMany(companies);
-        console.log('Seeded Companies');
+        for (const companyData of companies) {
+            const existingCompany = await Company.findOne({ name: companyData.name });
+            if (!existingCompany) {
+                await Company.create(companyData);
+                console.log(`✅ Seeded Company: ${companyData.name}`);
+            } else {
+                console.log(`⚠️ Company already exists: ${companyData.name}`);
+            }
+        }
 
-        // Seed Students
         // Find Google for HR attachment
         const google = await Company.findOne({ name: 'Google' });
 
+        // Seed Students / Users
         for (let studentData of students) {
-            if (studentData.role === 'hr' && google) {
-                studentData.companyId = google._id;
+            // 3. Checks whether each user already exists before creating it
+            const existingStudent = await Student.findOne({ email: studentData.email });
+            
+            if (!existingStudent) {
+                if (studentData.role === 'hr' && google) {
+                    studentData.companyId = google._id;
+                }
+                
+                // 4. Hashes passwords using bcrypt
+                const salt = await bcrypt.genSalt(10);
+                const hashedPassword = await bcrypt.hash(studentData.password, salt);
+                
+                // 5. Prevents duplicate users when run multiple times
+                // We use updateOne with upsert to create the user with the hashed password 
+                // avoiding the model's pre-save hook from hashing it twice.
+                await Student.updateOne(
+                    { email: studentData.email },
+                    { $setOnInsert: { ...studentData, password: hashedPassword } },
+                    { upsert: true }
+                );
+                
+                console.log(`✅ Seeded User: ${studentData.name} (${studentData.role})`);
+            } else {
+                console.log(`⚠️ User already exists: ${studentData.name} (${studentData.email})`);
             }
-            await Student.create(studentData);
         }
-        console.log('Seeded Students');
 
         // Seed some sample applications
         const john = await Student.findOne({ email: 'john@college.edu' });
         const amazon = await Company.findOne({ name: 'Amazon' });
 
-        if (john && google && amazon) {
-            await Application.create([
-                { student: john._id, company: google._id, status: 'Applied' },
-                { student: john._id, company: amazon._id, status: 'Shortlisted' },
-            ]);
-            console.log('Seeded Applications');
+        if (john && google) {
+            const existingApp1 = await Application.findOne({ student: john._id, company: google._id });
+            if (!existingApp1) {
+                await Application.create({ student: john._id, company: google._id, status: 'Applied' });
+                console.log('✅ Seeded Application: John -> Google');
+            } else {
+                console.log('⚠️ Application already exists: John -> Google');
+            }
         }
 
-        console.log('Seeding completed successfully');
-        process.exit();
+        if (john && amazon) {
+            const existingApp2 = await Application.findOne({ student: john._id, company: amazon._id });
+            if (!existingApp2) {
+                await Application.create({ student: john._id, company: amazon._id, status: 'Shortlisted' });
+                console.log('✅ Seeded Application: John -> Amazon');
+            } else {
+                console.log('⚠️ Application already exists: John -> Amazon');
+            }
+        }
+
+        // 6. Displays success and error messages in the console
+        console.log('🎉 Seeding completed successfully!');
+        
+        // 7. Closes the database connection after seeding is complete
+        await mongoose.connection.close();
+        console.log('🔌 Database connection closed.');
+        process.exit(0);
     } catch (error) {
-        console.error('Error seeding database:', error);
+        // 6. Displays error messages in the console
+        console.error('❌ Error seeding database:', error);
+        
+        // 7. Closes the database connection on error too
+        if (mongoose.connection.readyState !== 0) {
+            await mongoose.connection.close();
+            console.log('🔌 Database connection closed due to error.');
+        }
         process.exit(1);
     }
 };
